@@ -16,8 +16,8 @@ data/
 *.db
 *.sqlite3
 
-# Env
-.env
+# Env (frontend/.env is committed on purpose -- no secrets, just the
+# default local API URL; .env.local is for machine-specific overrides)
 .env.local
 
 # OS
