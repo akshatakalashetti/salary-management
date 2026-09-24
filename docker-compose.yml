@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      DATABASE_URL: sqlite:///./data/salary.db
+      CORS_ORIGINS: '["http://localhost:5173"]'
+
+  # One-off seeding, not a long-running service (profiles: ["seed"] keeps it
+  # out of a plain `docker compose up`). Run explicitly once with:
+  #   docker compose run --rm seed
+  seed:
+    build: ./backend
+    profiles: ["seed"]
+    volumes:
+      - ./data:/app/data
+    environment:
+      DATABASE_URL: sqlite:///./data/salary.db
+    entrypoint: ["python", "-m", "app.scripts.seed"]
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+    depends_on:
+      - backend
