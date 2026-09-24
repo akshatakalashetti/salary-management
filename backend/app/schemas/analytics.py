@@ -14,8 +14,12 @@ class CohortStatsOut(BaseModel):
 
 class SummaryOut(BaseModel):
     headcount: int
-    avg_salary: float
-    median_salary: float
+    # None when no country_id filter is applied: salaries are stored in local
+    # currency with no FX conversion (see docs/requirements.md non-goals), so
+    # an org-wide average/median would silently blend incompatible
+    # currencies. Pass country_id to get a currency-consistent figure.
+    avg_salary: float | None
+    median_salary: float | None
 
 
 class OutlierOut(BaseModel):
