@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -8,7 +10,17 @@ from app.api.routes import employees, reference
 from app.core.config import settings
 from app.db.base import Base, engine
 
-app = FastAPI(title="Salary Management API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    if settings.database_url.startswith("sqlite:///./"):
+        db_path = settings.database_url.replace("sqlite:///./", "")
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="Salary Management API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,14 +29,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    if settings.database_url.startswith("sqlite:///./"):
-        db_path = settings.database_url.replace("sqlite:///./", "")
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health")

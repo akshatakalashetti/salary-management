@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.sql.selectable import Subquery
 
 from app.crud.current_salary import current_salary_subquery
 from app.models.employee import Employee
@@ -24,13 +25,14 @@ class EmployeeListRow:
     current_currency: str | None
 
 
-def _base_list_query() -> Select:
+def _base_list_query() -> tuple[Select, Subquery]:
     salary_sq = current_salary_subquery()
-    return (
+    stmt = (
         select(Employee, salary_sq.c.current_salary, salary_sq.c.current_currency)
         .outerjoin(salary_sq, salary_sq.c.employee_id == Employee.id)
         .options(joinedload(Employee.department), joinedload(Employee.country))
     )
+    return stmt, salary_sq
 
 
 def list_employees(
@@ -47,7 +49,7 @@ def list_employees(
     page: int = 1,
     page_size: int = 25,
 ) -> tuple[list[EmployeeListRow], int]:
-    stmt = _base_list_query()
+    stmt, salary_sq = _base_list_query()
     count_stmt = select(func.count()).select_from(Employee)
 
     conditions = []
@@ -78,7 +80,6 @@ def list_employees(
 
     total = db.execute(count_stmt).scalar_one()
 
-    salary_sq = current_salary_subquery()
     if sort_by == "current_salary":
         order_col = salary_sq.c.current_salary
     else:
