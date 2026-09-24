@@ -82,8 +82,10 @@ export interface CohortStats {
 
 export interface AnalyticsSummary {
   headcount: number
-  avg_salary: number
-  median_salary: number
+  // null when no country filter is applied -- salaries aren't currency-
+  // converted, so a blended org-wide figure would be meaningless.
+  avg_salary: number | null
+  median_salary: number | null
 }
 
 export interface OutlierRow {

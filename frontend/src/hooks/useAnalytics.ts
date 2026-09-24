@@ -1,14 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { analyticsApi } from '../api/analytics'
 
-export function useAnalyticsSummary() {
-  return useQuery({ queryKey: ['analytics', 'summary'], queryFn: analyticsApi.summary })
+export function useAnalyticsSummary(countryId?: number) {
+  return useQuery({
+    queryKey: ['analytics', 'summary', countryId],
+    queryFn: () => analyticsApi.summary(countryId),
+  })
 }
 
-export function useByDepartment(countryId?: number) {
+export function useByDepartment(countryId: number | undefined) {
   return useQuery({
     queryKey: ['analytics', 'by-department', countryId],
-    queryFn: () => analyticsApi.byDepartment(countryId),
+    queryFn: () => analyticsApi.byDepartment(countryId as number),
+    enabled: countryId !== undefined,
   })
 }
 
@@ -19,8 +23,12 @@ export function useByCountry(departmentId?: number) {
   })
 }
 
-export function useSalaryBands() {
-  return useQuery({ queryKey: ['analytics', 'salary-bands'], queryFn: analyticsApi.salaryBands })
+export function useSalaryBands(countryId: number | undefined) {
+  return useQuery({
+    queryKey: ['analytics', 'salary-bands', countryId],
+    queryFn: () => analyticsApi.salaryBands(countryId as number),
+    enabled: countryId !== undefined,
+  })
 }
 
 export function useOutliers(threshold: number) {
