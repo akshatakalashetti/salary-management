@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401 -- ensures models are registered before create_all
-from app.api.routes import employees, reference
+from app.api.routes import analytics, employees, equity, reference
 from app.core.config import settings
 from app.db.base import Base, engine
 
@@ -34,3 +34,5 @@ def health() -> dict[str, str]:
 
 app.include_router(reference.router, prefix="/api/v1")
 app.include_router(employees.router, prefix="/api/v1")
+app.include_router(analytics.router, prefix="/api/v1")
+app.include_router(equity.router, prefix="/api/v1")
