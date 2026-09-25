@@ -48,7 +48,7 @@ export function EmployeeCreatePage() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={600} sx={{ mb: 2 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
         Add Employee
       </Typography>
       <Paper variant="outlined" sx={{ p: 3, maxWidth: 480 }} component="form" onSubmit={handleSubmit}>

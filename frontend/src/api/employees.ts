@@ -10,7 +10,7 @@ import type {
 
 export const employeesApi = {
   list: (params: EmployeeListParams) =>
-    api.get<EmployeeListResponse>(`/employees${buildQuery(params)}`),
+    api.get<EmployeeListResponse>(`/employees${buildQuery({ ...params })}`),
   get: (id: number) => api.get<EmployeeDetail>(`/employees/${id}`),
   create: (input: EmployeeCreateInput) => api.post<EmployeeDetail>('/employees', input),
   update: (id: number, input: Partial<EmployeeCreateInput> & { status?: string }) =>

@@ -4,7 +4,7 @@ import type { GenderGapRow } from '../api/types'
 export function GenderGapTable({ rows }: { rows: GenderGapRow[] }) {
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
         Gender Pay Gap by Cohort ({rows.length})
       </Typography>
       <TableContainer sx={{ maxHeight: 500 }}>

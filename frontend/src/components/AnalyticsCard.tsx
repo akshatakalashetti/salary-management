@@ -11,7 +11,7 @@ export function AnalyticsCard({ label, value }: Props) {
       <Typography variant="body2" color="text.secondary">
         {label}
       </Typography>
-      <Typography variant="h5" fontWeight={600}>
+      <Typography variant="h5" sx={{ fontWeight: 600 }}>
         {value}
       </Typography>
     </Paper>

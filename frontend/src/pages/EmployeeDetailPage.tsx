@@ -68,7 +68,7 @@ export function EmployeeDetailPage() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5" fontWeight={600}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
           {employee.first_name} {employee.last_name}{' '}
           <Chip
             label={employee.status}

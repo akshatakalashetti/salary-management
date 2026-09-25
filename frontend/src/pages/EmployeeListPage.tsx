@@ -86,7 +86,7 @@ export function EmployeeListPage() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5" fontWeight={600}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
           Employees
           {data ? (
             <Chip label={`${data.total.toLocaleString()} total`} size="small" sx={{ ml: 1.5 }} />

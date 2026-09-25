@@ -21,7 +21,7 @@ export function AnalyticsPage() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={600} sx={{ mb: 2 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
         Pay Analytics
       </Typography>
 

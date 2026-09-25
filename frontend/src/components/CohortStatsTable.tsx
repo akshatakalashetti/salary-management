@@ -4,7 +4,7 @@ import type { CohortStats } from '../api/types'
 export function CohortStatsTable({ title, keyLabel, data }: { title: string; keyLabel: string; data: CohortStats[] }) {
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
         {title}
       </Typography>
       <TableContainer>

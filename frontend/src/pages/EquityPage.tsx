@@ -13,7 +13,7 @@ export function EquityPage() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
         Pay Equity
       </Typography>
       <Alert severity="info" sx={{ mb: 3 }}>

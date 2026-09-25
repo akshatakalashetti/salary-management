@@ -10,7 +10,7 @@ interface Props {
 export function AnalyticsBarChart({ title, data }: Props) {
   return (
     <Paper variant="outlined" sx={{ p: 2, flex: 1, minWidth: 320 }}>
-      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
         {title}
       </Typography>
       <BarChart
