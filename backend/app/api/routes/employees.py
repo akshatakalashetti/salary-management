@@ -6,10 +6,12 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user, require_hr
 from app.crud import employee as crud
 from app.crud.current_salary import current_salary_for_employee
 from app.db.base import get_db
 from app.models.employee import Employee
+from app.models.user import User
 from app.schemas.employee import (
     EmployeeCreate,
     EmployeeDetail,
@@ -68,6 +70,21 @@ def _to_detail(db: Session, employee: Employee) -> EmployeeDetail:
         current_salary=current.amount if current else None,
         current_currency=current.currency if current else None,
         salary_history=[SalaryHistoryOut.model_validate(h) for h in employee.salary_history],
+        # Personal / contact
+        phone=employee.phone,
+        date_of_birth=employee.date_of_birth,
+        # Address
+        address_street=employee.address_street,
+        address_city=employee.address_city,
+        address_state=employee.address_state,
+        address_postal_code=employee.address_postal_code,
+        # Payroll
+        pay_frequency=employee.pay_frequency,
+        bank_last4=employee.bank_last4,
+        tax_id=employee.tax_id,
+        # Emergency contact
+        emergency_contact_name=employee.emergency_contact_name,
+        emergency_contact_phone=employee.emergency_contact_phone,
     )
 
 
@@ -84,6 +101,7 @@ def list_employees(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
+    _: User = Depends(require_hr),
 ):
     rows, total = crud.list_employees(
         db,
@@ -115,6 +133,7 @@ def export_employees(
     level: str | None = None,
     status: str | None = "active",
     db: Session = Depends(get_db),
+    _: User = Depends(require_hr),
 ):
     """CSV export of every employee matching the given filters (not just the
     current page) -- the "everything managed via Excel" problem the brief
@@ -183,7 +202,7 @@ def export_employees(
 
 
 @router.post("/employees", response_model=EmployeeDetail, status_code=201)
-def create_employee(payload: EmployeeCreate, db: Session = Depends(get_db)):
+def create_employee(payload: EmployeeCreate, db: Session = Depends(get_db), _: User = Depends(require_hr)):
     try:
         employee = crud.create_employee(db, payload)
     except IntegrityError as exc:
@@ -192,41 +211,79 @@ def create_employee(payload: EmployeeCreate, db: Session = Depends(get_db)):
     return _to_detail(db, employee)
 
 
+def _check_access(current_user: User, employee_id: int) -> None:
+    """HR can access any employee. Employees can only access their own record."""
+    if current_user.role == "hr":
+        return
+    if current_user.employee_id != employee_id:
+        raise HTTPException(status_code=403, detail="You can only view your own record")
+
+
 @router.get("/employees/{employee_id}", response_model=EmployeeDetail)
-def get_employee(employee_id: int, db: Session = Depends(get_db)):
+def get_employee(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _check_access(current_user, employee_id)
     employee = _get_or_404(db, employee_id)
     return _to_detail(db, employee)
 
 
 @router.put("/employees/{employee_id}", response_model=EmployeeDetail)
-def update_employee(employee_id: int, payload: EmployeeUpdate, db: Session = Depends(get_db)):
+def update_employee(
+    employee_id: int,
+    payload: EmployeeUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _check_access(current_user, employee_id)
     employee = _get_or_404(db, employee_id)
     employee = crud.update_employee(db, employee, payload)
     return _to_detail(db, employee)
 
 
 @router.delete("/employees/{employee_id}", response_model=EmployeeDetail)
-def delete_employee(employee_id: int, db: Session = Depends(get_db)):
+def delete_employee(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_hr),
+):
     employee = _get_or_404(db, employee_id)
     employee = crud.soft_delete_employee(db, employee)
     return _to_detail(db, employee)
 
 
 @router.get("/employees/{employee_id}/salary-history", response_model=list[SalaryHistoryOut])
-def list_salary_history(employee_id: int, db: Session = Depends(get_db)):
+def list_salary_history(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _check_access(current_user, employee_id)
     employee = _get_or_404(db, employee_id)
     return [SalaryHistoryOut.model_validate(h) for h in employee.salary_history]
 
 
 @router.post("/employees/{employee_id}/salary-history", response_model=SalaryHistoryOut, status_code=201)
-def create_salary_history(employee_id: int, payload: SalaryHistoryCreate, db: Session = Depends(get_db)):
+def create_salary_history(
+    employee_id: int,
+    payload: SalaryHistoryCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_hr),
+):
     _get_or_404(db, employee_id)
     row = crud.add_salary_history(db, employee_id, payload)
     return SalaryHistoryOut.model_validate(row)
 
 
 @router.delete("/employees/{employee_id}/salary-history/{history_id}", status_code=204)
-def delete_salary_history(employee_id: int, history_id: int, db: Session = Depends(get_db)):
+def delete_salary_history(
+    employee_id: int,
+    history_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_hr),
+):
     _get_or_404(db, employee_id)
     ok = crud.delete_salary_history(db, employee_id, history_id)
     if not ok:

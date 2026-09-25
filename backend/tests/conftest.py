@@ -1,6 +1,7 @@
 import os
 
-os.environ.setdefault("DATABASE_URL", "sqlite://")  # avoid touching disk when the app's startup event runs
+os.environ.setdefault("DATABASE_URL", "sqlite://")
+os.environ.setdefault("TESTING", "1")  # use cheap bcrypt rounds (4 instead of 12)
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,9 +10,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app import models  # noqa: F401
+from app.core.auth import get_current_user, hash_password
 from app.db.base import Base, get_db
 from app.main import app
 from app.models.reference import Country, Department
+from app.models.user import User
 
 
 @pytest.fixture()
@@ -30,15 +33,27 @@ def db_session():
         session.close()
 
 
+def _make_hr_user(db_session) -> User:
+    user = User(email="hr@test.example", password_hash=hash_password("test"), role="hr")
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
 @pytest.fixture()
 def client(db_session):
+    """Authenticated client logged in as an HR user — used by most tests."""
+    hr_user = _make_hr_user(db_session)
+
     def override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
+        yield db_session
+
+    def override_get_current_user():
+        return hr_user
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

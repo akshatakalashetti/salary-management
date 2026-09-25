@@ -24,8 +24,9 @@ import random
 from faker import Faker
 from sqlalchemy import delete, insert
 
+from app.core.auth import hash_password
 from app.db.base import Base, SessionLocal, engine
-from app.models import Country, Department, Employee, SalaryHistory
+from app.models import Country, Department, Employee, SalaryHistory, User
 from app.scripts.seed_data import (
     BASE_SALARY_BY_LEVEL_AND_COUNTRY,
     COUNTRIES,
@@ -47,7 +48,11 @@ def _weighted_choice(rng: random.Random, items: list[tuple]) -> tuple:
     return rng.choices(items, weights=weights, k=1)[0]
 
 
+PAY_FREQUENCIES = ["monthly", "biweekly"]
+
+
 def reset_schema(session) -> None:
+    session.execute(delete(User))
     session.execute(delete(SalaryHistory))
     session.execute(delete(Employee))
     session.execute(delete(Department))
@@ -125,6 +130,21 @@ def generate_employees(count: int, dept_ids: dict, countries: dict, faker: Faker
                 "level": level_code,
                 "hire_date": hire_date,
                 "status": "active",
+                # Personal / contact — phone truncated to 30 chars max
+                "phone": faker.phone_number()[:30],
+                "date_of_birth": faker.date_of_birth(minimum_age=22, maximum_age=60),
+                # Address
+                "address_street": faker.street_address(),
+                "address_city": faker.city(),
+                "address_state": faker.state(),
+                "address_postal_code": faker.postcode(),
+                # Payroll
+                "pay_frequency": rng.choice(PAY_FREQUENCIES),
+                "bank_last4": str(rng.randint(1000, 9999)),
+                "tax_id": faker.ssn(),
+                # Emergency contact
+                "emergency_contact_name": faker.name(),
+                "emergency_contact_phone": faker.phone_number()[:30],
             }
         )
 
@@ -188,7 +208,39 @@ def run(count: int) -> None:
         session.execute(insert(SalaryHistory), salary_rows)
         session.commit()
 
+        # --- Users ---
+        # One HR admin account
+        session.add(
+            User(
+                email="hr@acme-corp.example",
+                password_hash=hash_password("hr-password"),
+                role="hr",
+                employee_id=None,
+            )
+        )
+        session.commit()
+
+        # One employee login per employee (email = their work email, password = their employee_code)
+        all_employees = session.query(Employee.id, Employee.email, Employee.employee_code).all()
+        user_rows = [
+            {
+                "email": emp.email,
+                "password_hash": hash_password(emp.employee_code),
+                "role": "employee",
+                "employee_id": emp.id,
+            }
+            for emp in all_employees
+        ]
+        # Batch in chunks to avoid SQLite variable limit
+        chunk = 500
+        for start in range(0, len(user_rows), chunk):
+            session.execute(insert(User), user_rows[start : start + chunk])
+        session.commit()
+
         print(f"Seeded {len(employees)} employees and {len(salary_rows)} salary_history rows.")
+        print(f"Seeded {len(user_rows) + 1} user accounts (1 HR + {len(user_rows)} employees).")
+        print("  HR login:       hr@acme-corp.example / hr-password")
+        print("  Employee login: <their work email> / <their EMP-XXXXXX code>")
         for dept_name, _, _ in DEPARTMENTS:
             n = sum(1 for e in employees if e["department_id"] == dept_ids[dept_name])
             print(f"  {dept_name:20s}: {n}")

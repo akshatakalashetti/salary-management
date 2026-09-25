@@ -3,13 +3,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.analytics.equity import find_gender_gaps, find_outliers
+from app.core.auth import require_hr
 from app.core.config import settings
 from app.crud.analytics import fetch_current_salary_points
 from app.db.base import get_db
 from app.models.employee import Employee
 from app.schemas.analytics import GenderGapOut, OutlierOut
 
-router = APIRouter(prefix="/analytics/pay-equity", tags=["pay-equity"])
+router = APIRouter(prefix="/analytics/pay-equity", tags=["pay-equity"], dependencies=[Depends(require_hr)])
 
 
 @router.get("/outliers", response_model=list[OutlierOut])

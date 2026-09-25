@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.analytics.aggregation import group_by, org_summary
+from app.core.auth import require_hr
 from app.crud.analytics import fetch_current_salary_points
 from app.db.base import get_db
+from app.models.user import User
 from app.schemas.analytics import CohortStatsOut, SummaryOut
 
-router = APIRouter(prefix="/analytics", tags=["analytics"])
+router = APIRouter(prefix="/analytics", tags=["analytics"], dependencies=[Depends(require_hr)])
 
 
 def _to_cohort_out(stats) -> CohortStatsOut:
