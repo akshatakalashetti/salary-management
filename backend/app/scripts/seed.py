@@ -61,13 +61,13 @@ def seed_reference_data(session) -> tuple[dict[str, int], dict[str, dict]]:
     session.commit()
     dept_ids = {d.name: d.id for d in session.query(Department).all()}
 
-    country_rows = [
-        {"name": name, "iso_code": iso, "currency_code": cur} for name, iso, cur, _ in COUNTRIES
-    ]
+    country_rows = [{"name": name, "iso_code": iso, "currency_code": cur} for name, iso, cur, _ in COUNTRIES]
     session.execute(insert(Country), country_rows)
     session.commit()
-    country_by_name = {c.name: {"id": c.id, "iso_code": c.iso_code, "currency_code": c.currency_code}
-                        for c in session.query(Country).all()}
+    country_by_name = {
+        c.name: {"id": c.id, "iso_code": c.iso_code, "currency_code": c.currency_code}
+        for c in session.query(Country).all()
+    }
     return dept_ids, country_by_name
 
 

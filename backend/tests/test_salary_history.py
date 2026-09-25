@@ -53,7 +53,12 @@ def test_list_endpoint_current_salary_matches_detail_endpoint_for_multiple_emplo
         ids.append(created["id"])
         client.post(
             f"/api/v1/employees/{created['id']}/salary-history",
-            json={"amount": str(80000 + i * 1000), "currency": "USD", "effective_date": "2024-01-01", "reason": "raise"},
+            json={
+                "amount": str(80000 + i * 1000),
+                "currency": "USD",
+                "effective_date": "2024-01-01",
+                "reason": "raise",
+            },
         )
 
     listing = {item["id"]: item["current_salary"] for item in client.get("/api/v1/employees").json()["items"]}

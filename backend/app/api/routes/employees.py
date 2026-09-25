@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud import employee as crud
@@ -100,7 +101,11 @@ def list_employees(
 
 @router.post("/employees", response_model=EmployeeDetail, status_code=201)
 def create_employee(payload: EmployeeCreate, db: Session = Depends(get_db)):
-    employee = crud.create_employee(db, payload)
+    try:
+        employee = crud.create_employee(db, payload)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="An employee with this email already exists") from exc
     return _to_detail(db, employee)
 
 

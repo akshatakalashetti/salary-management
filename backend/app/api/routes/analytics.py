@@ -29,7 +29,9 @@ def summary(country_id: int | None = None, db: Session = Depends(get_db)):
 
 @router.get("/by-department", response_model=list[CohortStatsOut])
 def by_department(
-    country_id: int = Query(..., description="Required: avg/median would blend currencies across countries otherwise"),
+    country_id: int = Query(
+        ..., description="Required: avg/median would blend currencies across countries otherwise"
+    ),
     db: Session = Depends(get_db),
 ):
     points = fetch_current_salary_points(db, country_id=country_id)
@@ -49,7 +51,9 @@ def by_country(department_id: int | None = None, db: Session = Depends(get_db)):
 
 @router.get("/salary-bands", response_model=list[CohortStatsOut])
 def salary_bands(
-    country_id: int = Query(..., description="Required: avg/median would blend currencies across countries otherwise"),
+    country_id: int = Query(
+        ..., description="Required: avg/median would blend currencies across countries otherwise"
+    ),
     db: Session = Depends(get_db),
 ):
     points = fetch_current_salary_points(db, country_id=country_id)

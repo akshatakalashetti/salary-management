@@ -7,7 +7,7 @@ analytics/equity query so this logic never gets duplicated or drifts.
 import datetime as dt
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import Session
 from sqlalchemy.sql.selectable import Subquery
 
 from app.models.salary_history import SalaryHistory
@@ -44,7 +44,9 @@ def current_salary_subquery(as_of: dt.date | None = None) -> Subquery:
     )
 
 
-def current_salary_for_employee(db: Session, employee_id: int, as_of: dt.date | None = None) -> SalaryHistory | None:
+def current_salary_for_employee(
+    db: Session, employee_id: int, as_of: dt.date | None = None
+) -> SalaryHistory | None:
     as_of = as_of or dt.date.today()
     stmt = (
         select(SalaryHistory)

@@ -1,4 +1,3 @@
-import datetime as dt
 from dataclasses import dataclass
 
 from sqlalchemy import Select, func, or_, select
@@ -96,7 +95,9 @@ def get_employee(db: Session, employee_id: int) -> Employee | None:
     stmt = (
         select(Employee)
         .where(Employee.id == employee_id)
-        .options(joinedload(Employee.department), joinedload(Employee.country), joinedload(Employee.salary_history))
+        .options(
+            joinedload(Employee.department), joinedload(Employee.country), joinedload(Employee.salary_history)
+        )
     )
     return db.execute(stmt).unique().scalar_one_or_none()
 

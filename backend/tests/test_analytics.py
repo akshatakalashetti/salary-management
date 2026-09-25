@@ -1,9 +1,21 @@
 from app.analytics.aggregation import SalaryPoint, group_by, org_summary, summarize
 
 
-def _point(employee_id, department="Engineering", country="United States", level="L3", gender="female", salary=100_000):
+def _point(
+    employee_id,
+    department="Engineering",
+    country="United States",
+    level="L3",
+    gender="female",
+    salary=100_000,
+):
     return SalaryPoint(
-        employee_id=employee_id, department=department, country=country, level=level, gender=gender, salary=salary
+        employee_id=employee_id,
+        department=department,
+        country=country,
+        level=level,
+        gender=gender,
+        salary=salary,
     )
 
 

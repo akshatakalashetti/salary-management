@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# E501: line length is a formatter's job, not a lint failure.
+# B008: FastAPI's `Depends(...)` in a default argument is the idiomatic DI
+# pattern for this framework, not the mutable-default-argument bug B008 warns
+# about elsewhere.
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

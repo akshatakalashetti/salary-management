@@ -2,9 +2,21 @@ from app.analytics.aggregation import SalaryPoint
 from app.analytics.equity import find_gender_gaps, find_outliers
 
 
-def _point(employee_id, department="Engineering", country="United States", level="L3", gender="female", salary=100_000):
+def _point(
+    employee_id,
+    department="Engineering",
+    country="United States",
+    level="L3",
+    gender="female",
+    salary=100_000,
+):
     return SalaryPoint(
-        employee_id=employee_id, department=department, country=country, level=level, gender=gender, salary=salary
+        employee_id=employee_id,
+        department=department,
+        country=country,
+        level=level,
+        gender=gender,
+        salary=salary,
     )
 
 
@@ -44,10 +56,9 @@ def test_countries_are_not_mixed_into_the_same_cohort():
 
 
 def test_gender_gap_detected_with_correct_gap_pct():
-    points = (
-        [_point(i, gender="male", salary=120_000) for i in range(1, 4)]
-        + [_point(i, gender="female", salary=100_000) for i in range(10, 13)]
-    )
+    points = [_point(i, gender="male", salary=120_000) for i in range(1, 4)] + [
+        _point(i, gender="female", salary=100_000) for i in range(10, 13)
+    ]
     results = find_gender_gaps(points, min_per_gender=2, threshold=0.10)
     assert len(results) == 1
     gap = results[0]
@@ -57,10 +68,9 @@ def test_gender_gap_detected_with_correct_gap_pct():
 
 
 def test_gender_gap_not_flagged_below_threshold():
-    points = (
-        [_point(i, gender="male", salary=101_000) for i in range(1, 4)]
-        + [_point(i, gender="female", salary=100_000) for i in range(10, 13)]
-    )
+    points = [_point(i, gender="male", salary=101_000) for i in range(1, 4)] + [
+        _point(i, gender="female", salary=100_000) for i in range(10, 13)
+    ]
     results = find_gender_gaps(points, min_per_gender=2, threshold=0.10)
     assert results == []
 

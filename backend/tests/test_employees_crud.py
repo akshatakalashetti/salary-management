@@ -25,6 +25,16 @@ def test_create_employee_rejects_missing_required_field(client, departments, cou
     assert resp.status_code == 422
 
 
+def test_create_employee_rejects_duplicate_email_with_409_not_500(client, departments, countries):
+    payload = make_employee_payload(departments["eng"].id, countries["us"].id, email="dup@example.com")
+    first = client.post("/api/v1/employees", json=payload)
+    assert first.status_code == 201
+
+    second = client.post("/api/v1/employees", json=payload)
+    assert second.status_code == 409
+    assert "email" in second.json()["detail"].lower()
+
+
 def test_get_employee_by_id(client, departments, countries):
     created = client.post(
         "/api/v1/employees", json=make_employee_payload(departments["eng"].id, countries["us"].id)

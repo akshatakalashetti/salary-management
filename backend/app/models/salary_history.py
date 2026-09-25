@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, ForeignKey, Index, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -6,14 +7,15 @@ from sqlalchemy.sql import func
 
 from app.db.base import Base
 
+if TYPE_CHECKING:
+    from app.models.employee import Employee
+
 REASONS = ("hire", "raise", "promotion", "correction", "adjustment")
 
 
 class SalaryHistory(Base):
     __tablename__ = "salary_history"
-    __table_args__ = (
-        Index("ix_salary_history_employee_effective", "employee_id", "effective_date"),
-    )
+    __table_args__ = (Index("ix_salary_history_employee_effective", "employee_id", "effective_date"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
