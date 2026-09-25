@@ -66,6 +66,7 @@ Base path `/api/v1`.
 |---|---|
 | `GET /departments`, `GET /countries` | Reference data for dropdowns/filters |
 | `GET /employees` | Search + filter + server-side pagination + sort |
+| `GET /employees/export` | CSV of every employee matching the current search/filters (not just one page) — for sharing outside the app |
 | `POST /employees` | Create employee + initial salary_history row (transactional) |
 | `GET/PUT/DELETE /employees/{id}` | Detail, bio update, soft delete |
 | `GET/POST/DELETE /employees/{id}/salary-history` | Append-only salary history |
