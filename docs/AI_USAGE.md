@@ -65,6 +65,26 @@ caught the original bug (`test_by_department_groups_correctly_within_a_country`
 mixes a third country into the fixture specifically to guard against
 regressing this).
 
+**A verification gap this session caught in itself:** every earlier "type
+check" during this build ran `npx tsc --noEmit` from the frontend root and
+reported success — but the root `tsconfig.json` is a "solution" config
+(`"files": []`, only `references` to `tsconfig.app.json`/`tsconfig.node.json`).
+Run that way, `tsc` checks zero files and trivially "passes." This was only
+discovered when `npm run build` (which correctly runs `tsc -b`, following the
+project references) was actually executed and failed with real errors: MUI
+v9 had removed the `fontWeight` shorthand prop from `Typography` (a breaking
+change from earlier MUI versions this app's code was implicitly written
+against), so every `<Typography fontWeight={600}>` in the app was invalid.
+The fix was mechanical (move `fontWeight` into `sx`), but the more important
+fix was to the verification process itself: CI now runs `tsc -b` (added
+specifically because the ad hoc command used all session was silently
+checking nothing) and a real `npm run build`, not just a spot-checked
+`tsc --noEmit`. Recorded here because it's a good example of the general
+risk with AI-assisted verification: a green check that *looks* like the real
+one but silently isn't needs to actually be run end-to-end (here, an
+untouched production build), not trusted because a superficially-similar
+command returned success previously.
+
 ## 4. Where AI output was corrected or overridden
 
 - The initial `on_event("startup")` handler was flagged as deprecated by
