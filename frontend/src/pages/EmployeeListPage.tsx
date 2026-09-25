@@ -1,7 +1,8 @@
-import { Alert, Box, Button, Chip, Typography } from '@mui/material'
+import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material'
 import { DataGrid, type GridColDef, type GridSortModel } from '@mui/x-data-grid'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { employeesApi } from '../api/employees'
 import { EmployeeFilters, type FilterState } from '../components/EmployeeFilters'
 import { useEmployees } from '../hooks/useEmployees'
 import type { EmployeeListItem } from '../api/types'
@@ -83,6 +84,20 @@ export function EmployeeListPage() {
     setPage(0)
   }
 
+  function handleExport() {
+    // Exports every row matching the current filters (not just the visible
+    // page) -- a plain navigation, since the server responds with
+    // Content-Disposition: attachment and the browser handles the download.
+    const url = employeesApi.exportCsvUrl({
+      search: filters.search || undefined,
+      department_id: filters.department_id,
+      country_id: filters.country_id,
+      gender: filters.gender,
+      status: filters.status,
+    })
+    window.location.href = url
+  }
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -92,9 +107,14 @@ export function EmployeeListPage() {
             <Chip label={`${data.total.toLocaleString()} total`} size="small" sx={{ ml: 1.5 }} />
           ) : null}
         </Typography>
-        <Button variant="contained" onClick={() => navigate('/employees/new')}>
-          Add Employee
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" onClick={handleExport}>
+            Export CSV
+          </Button>
+          <Button variant="contained" onClick={() => navigate('/employees/new')}>
+            Add Employee
+          </Button>
+        </Stack>
       </Box>
 
       <EmployeeFilters filters={filters} onChange={handleFiltersChange} />

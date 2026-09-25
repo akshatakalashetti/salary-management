@@ -1,4 +1,8 @@
+import csv
+import io
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -96,6 +100,85 @@ def list_employees(
     )
     return EmployeeListResponse(
         items=[_to_list_item(r) for r in rows], total=total, page=page, page_size=page_size
+    )
+
+
+# Registered before GET /employees/{employee_id} -- FastAPI matches routes in
+# registration order, and "export" would otherwise be swallowed by the
+# {employee_id}: int path param (and fail with a 422, not 404).
+@router.get("/employees/export")
+def export_employees(
+    search: str | None = None,
+    department_id: int | None = None,
+    country_id: int | None = None,
+    gender: str | None = None,
+    level: str | None = None,
+    status: str | None = "active",
+    db: Session = Depends(get_db),
+):
+    """CSV export of every employee matching the given filters (not just the
+    current page) -- the "everything managed via Excel" problem the brief
+    describes cuts both ways: HR also needs to get data back OUT of the tool
+    to share with someone who isn't going to log into the web app.
+    """
+    rows, _total = crud.list_employees(
+        db,
+        search=search,
+        department_id=department_id,
+        country_id=country_id,
+        gender=gender,
+        level=level,
+        status=status,
+        sort_by="last_name",
+        sort_dir="asc",
+        page=1,
+        page_size=1_000_000,  # effectively "no pagination" -- 10k rows is trivial to export in one pass
+    )
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(
+        [
+            "employee_code",
+            "first_name",
+            "last_name",
+            "gender",
+            "email",
+            "department",
+            "country",
+            "role_title",
+            "level",
+            "hire_date",
+            "status",
+            "current_salary",
+            "current_currency",
+        ]
+    )
+    for row in rows:
+        e = row.employee
+        writer.writerow(
+            [
+                e.employee_code,
+                e.first_name,
+                e.last_name,
+                e.gender,
+                e.email,
+                e.department.name,
+                e.country.name,
+                e.role_title,
+                e.level,
+                e.hire_date.isoformat(),
+                e.status,
+                row.current_salary,
+                row.current_currency,
+            ]
+        )
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=employees_export.csv"},
     )
 
 
