@@ -15,16 +15,24 @@ def _to_cohort_out(stats) -> CohortStatsOut:
 
 @router.get("/summary", response_model=SummaryOut)
 def summary(country_id: int | None = None, db: Session = Depends(get_db)):
-    points = fetch_current_salary_points(db, country_id=country_id)
-    stats = org_summary(points)
-    if stats is None:
-        return SummaryOut(headcount=0, avg_salary=None, median_salary=None)
-    # Without a country filter, headcount is still meaningful (currency-
-    # independent) but avg/median would blend currencies, so they're
-    # withheld rather than reported as a misleading blended number.
+    # Headcount is always the org-wide total, regardless of country_id --
+    # it's currency-independent, so there's no reason to scope it down when
+    # a country is selected just to compute avg/median. A previous version
+    # of this endpoint filtered headcount by country_id too, which quietly
+    # relabeled "headcount for the selected country" as "Total Headcount
+    # (org-wide)" in the UI -- caught by actually looking at the rendered
+    # page (519, matching Australia's headcount, not 10,000) rather than by
+    # a test, since the existing tests only asserted the filtered-count
+    # behavior was internally consistent, not that it matched the label.
+    org_wide_headcount = len(fetch_current_salary_points(db))
+
     if country_id is None:
-        return SummaryOut(headcount=stats.count, avg_salary=None, median_salary=None)
-    return SummaryOut(headcount=stats.count, avg_salary=stats.avg, median_salary=stats.median)
+        return SummaryOut(headcount=org_wide_headcount, avg_salary=None, median_salary=None)
+
+    stats = org_summary(fetch_current_salary_points(db, country_id=country_id))
+    if stats is None:
+        return SummaryOut(headcount=org_wide_headcount, avg_salary=None, median_salary=None)
+    return SummaryOut(headcount=org_wide_headcount, avg_salary=stats.avg, median_salary=stats.median)
 
 
 @router.get("/by-department", response_model=list[CohortStatsOut])

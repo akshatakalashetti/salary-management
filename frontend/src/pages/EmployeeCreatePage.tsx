@@ -85,6 +85,9 @@ export function EmployeeCreatePage() {
             value={form.department_id || ''}
             onChange={(e) => set('department_id', Number(e.target.value))}
           >
+            <MenuItem value="" disabled>
+              {departments ? 'Select a department' : 'Loading…'}
+            </MenuItem>
             {departments?.map((d) => (
               <MenuItem key={d.id} value={d.id}>
                 {d.name}
@@ -98,6 +101,9 @@ export function EmployeeCreatePage() {
             value={form.country_id || ''}
             onChange={(e) => handleCountryChange(Number(e.target.value))}
           >
+            <MenuItem value="" disabled>
+              {countries ? 'Select a country' : 'Loading…'}
+            </MenuItem>
             {countries?.map((c) => (
               <MenuItem key={c.id} value={c.id}>
                 {c.name}

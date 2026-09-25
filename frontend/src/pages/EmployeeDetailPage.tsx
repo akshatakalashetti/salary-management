@@ -115,6 +115,7 @@ export function EmployeeDetailPage() {
               value={form.department_id ?? ''}
               onChange={(e) => setForm({ ...form, department_id: Number(e.target.value) })}
             >
+              {!departments ? <MenuItem value="">Loading…</MenuItem> : null}
               {departments?.map((d) => (
                 <MenuItem key={d.id} value={d.id}>
                   {d.name}
@@ -127,6 +128,7 @@ export function EmployeeDetailPage() {
               value={form.country_id ?? ''}
               onChange={(e) => setForm({ ...form, country_id: Number(e.target.value) })}
             >
+              {!countries ? <MenuItem value="">Loading…</MenuItem> : null}
               {countries?.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
                   {c.name}

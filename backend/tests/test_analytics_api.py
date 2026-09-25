@@ -35,7 +35,11 @@ def test_summary_with_country_filter_computes_avg_and_median(client, departments
     )
 
     resp = client.get("/api/v1/analytics/summary", params={"country_id": countries["us"].id}).json()
-    assert resp["headcount"] == 2
+    # headcount stays org-wide (3, including the India employee) even
+    # though avg/median are scoped to just the US employees -- headcount is
+    # currency-independent and shouldn't shrink just because a country was
+    # picked to make avg/median currency-consistent.
+    assert resp["headcount"] == 3
     assert resp["avg_salary"] == 150000.0
     assert resp["median_salary"] == 150000.0
 

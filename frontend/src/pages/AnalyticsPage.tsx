@@ -58,20 +58,22 @@ export function AnalyticsPage() {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="h6">Department &amp; Level Breakdown</Typography>
-        <TextField
-          select
-          label="Country"
-          size="small"
-          value={countryId ?? ''}
-          onChange={(e) => setSelectedCountryId(Number(e.target.value))}
-          sx={{ minWidth: 200 }}
-        >
-          {countries?.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.name} ({c.currency_code})
-            </MenuItem>
-          ))}
-        </TextField>
+        {countries && countries.length > 0 ? (
+          <TextField
+            select
+            label="Country"
+            size="small"
+            value={countryId ?? ''}
+            onChange={(e) => setSelectedCountryId(Number(e.target.value))}
+            sx={{ minWidth: 200 }}
+          >
+            {countries.map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                {c.name} ({c.currency_code})
+              </MenuItem>
+            ))}
+          </TextField>
+        ) : null}
       </Box>
 
       <Stack spacing={2}>
