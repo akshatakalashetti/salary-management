@@ -13,7 +13,27 @@ from app.db.base import Base, engine
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     Base.metadata.create_all(bind=engine)
+    _auto_seed_if_empty()
     yield
+
+
+def _auto_seed_if_empty() -> None:
+    """Seed demo data on first startup (e.g. on Render/Railway where the
+    filesystem is fresh after each deploy). Skips if employees already exist."""
+    from sqlalchemy import text
+    from app.db.base import SessionLocal
+    try:
+        db = SessionLocal()
+        count = db.execute(text("SELECT count(*) FROM employees")).scalar()
+        db.close()
+        if count == 0:
+            import logging
+            logging.getLogger("uvicorn").info("Empty database detected — running seed script…")
+            from app.scripts.seed import run
+            run(10_000)
+    except Exception as exc:
+        import logging
+        logging.getLogger("uvicorn").warning(f"Auto-seed skipped: {exc}")
 
 
 app = FastAPI(title="Salary Management API", version="0.1.0", lifespan=lifespan)

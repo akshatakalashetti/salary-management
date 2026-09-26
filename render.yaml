@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: salary-management-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./data/salary.db
+      - key: CORS_ORIGINS
+        value: '["https://salary-management-ui.pages.dev","http://localhost:5173"]'
+    disk:
+      name: db-data
+      mountPath: /app/data
+      sizeGB: 1

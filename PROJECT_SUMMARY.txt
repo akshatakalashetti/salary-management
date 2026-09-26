@@ -1,0 +1,122 @@
+===========================================================
+SALARY MANAGEMENT SYSTEM — FULL PROJECT SUMMARY
+===========================================================
+Submitted by: Akshata Kalashetti
+GitHub Repo : https://github.com/akshatakalashetti/salary-management
+
+-----------------------------------------------------------
+WHAT WAS BUILT
+-----------------------------------------------------------
+A full-stack, production-quality HR Salary Management System
+that replaces spreadsheet-based salary management for a 10,000+
+employee organization. The system allows HR Managers to manage
+employee records, run payroll, analyze salary data, detect pay
+inequity, and manage leave — while employees can securely view
+and update their own profile.
+
+-----------------------------------------------------------
+TECH STACK
+-----------------------------------------------------------
+Backend  : Python 3.13, FastAPI, SQLAlchemy 2.0, SQLite
+Frontend : React 18 (Vite), TypeScript, MUI v9, TanStack Query
+Auth     : JWT tokens (python-jose), bcrypt password hashing
+Testing  : pytest (40 tests), 100% passing
+Deploy   : Docker Compose (local), Render (backend), Cloudflare Pages (frontend)
+CI       : GitHub Actions (ruff lint + pytest + tsc + build on every push)
+
+-----------------------------------------------------------
+FEATURES BUILT
+-----------------------------------------------------------
+
+1. EMPLOYEE MANAGEMENT (CRUD)
+   - Create, view, update, soft-delete employees
+   - Extended profile: personal info, address, payroll details,
+     emergency contact
+   - Server-side search, filter (department/country/gender/level),
+     pagination and sorting across 10,000 employees
+   - Export filtered employee list to CSV
+
+2. SALARY HISTORY (EFFECTIVE-DATED)
+   - Append-only salary history (no overwrite — full audit trail)
+   - "Current salary" derived from MAX(effective_date) pattern —
+     never stored redundantly
+   - HR can add raises, promotions, corrections; employees view
+     their own history
+
+3. PAY ANALYTICS
+   - Org-wide headcount by department (currency-independent)
+   - Avg/median/min/max/P25/P75 salary by department, by country,
+     and by level (country-scoped to avoid currency mixing)
+   - Salary bands per level
+
+4. PAY EQUITY / OUTLIER DETECTION
+   - Cohort-median-deviation method (simple, explainable — no ML)
+   - Cohort = (department + level + country) — currency-safe
+   - Flags individual employees paid >20% above/below cohort median
+   - Flags gender pay gaps >10% within cohorts
+   - Thresholds adjustable via live sliders in the UI
+
+5. LEAVE MANAGEMENT
+   - 4 leave types: Earned (21d), Flexi (5d), Sick (12d), Casual (7d)
+   - Balance cards with progress bars showing used/pending/available
+   - Employees apply for leave with automatic balance validation
+   - Leave history with status chips; cancel pending requests
+
+6. PAYROLL PROCESSING (UI)
+   - Month/year selector for payroll run
+   - Animated batch processing: Pending → Processing → Paid ✓ + Email Sent
+   - Summary: total employees paid, total disbursed, notifications sent
+
+7. AUTHENTICATION & ROLE-BASED ACCESS
+   - JWT login: HR and Employee roles
+   - HR: full access to all employees, analytics, equity, payroll
+   - Employee: own profile only (read + edit address/personal/emergency)
+   - Route guards on both frontend and backend
+
+8. SEED SCRIPT
+   - 10,000 employees generated in ~20 seconds (bulk insert, not ORM loop)
+   - Realistic salary variance by (level + country), gaussian noise
+   - Synthetic pay outliers (~4%) and gender pay gap injected for demo
+   - Auto-seeds on startup when database is empty (production deployment)
+
+-----------------------------------------------------------
+REAL BUGS CAUGHT DURING DEVELOPMENT
+-----------------------------------------------------------
+1. Sort by current_salary built a disconnected subquery — failed with
+   "no such column" at DB level. Caught by test suite.
+
+2. Analytics blended USD+INR salaries — showed nonsensical org-wide
+   average of ~738,000. Caught by looking at rendered UI (519 showed
+   as "org headcount" instead of 10,000). Fixed by requiring country_id
+   on currency-sensitive endpoints.
+
+3. tsc --noEmit checked zero files (root tsconfig uses project
+   references). Real errors only surfaced via npm run build. Fixed
+   CI to use tsc -b.
+
+4. bcrypt passlib crashed on Python 3.13 (internal 72-byte limit
+   bug). Switched to direct bcrypt library.
+
+-----------------------------------------------------------
+TESTING
+-----------------------------------------------------------
+- 40 backend tests (pytest), all passing in <1 second
+- In-memory SQLite per test — fast and deterministic
+- Covers: CRUD, salary history derivation (out-of-order dates),
+  search/filter/pagination, analytics aggregation, equity outlier
+  detection, gender gap calculation, CSV export, auth/RBAC
+
+-----------------------------------------------------------
+DOCUMENTED DECISIONS (see docs/ folder)
+-----------------------------------------------------------
+- requirements.md   — goal, scope, non-goals + reasoning
+- ARCHITECTURE.md   — data model (ER diagram), API table, frontend map
+- TRADEOFFS.md      — 12 documented decisions with reasoning
+- PERFORMANCE.md    — why analytics are query-time, not precomputed
+- AI_USAGE.md       — full log of how AI tools were used + corrected
+
+-----------------------------------------------------------
+CREDENTIALS (for demo)
+-----------------------------------------------------------
+HR Login  : hr@acme-corp.example   / hr-password
+Employee  : gabriella.abbott.1073@acme-corp.example / EMP-001073

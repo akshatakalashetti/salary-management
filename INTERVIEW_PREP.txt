@@ -1,0 +1,146 @@
+===========================================================
+INTERVIEW PREPARATION — HOW TO EXPLAIN YOUR PROJECT
+===========================================================
+Salary Management System — Incubyte Assessment
+Candidate: Akshata Kalashetti
+
+Use this as a reference to confidently answer questions
+in the technical discussion round.
+
+-----------------------------------------------------------
+Q: WALK ME THROUGH WHAT YOU BUILT
+-----------------------------------------------------------
+"I built a full-stack HR salary management system to replace
+Excel-based salary tracking for a 10,000-employee organization.
+The HR manager can manage employee records, track salary history,
+run analytics on how the company pays people, detect pay equity
+issues, manage leave, and process payroll — all from a web UI.
+Employees can log in too and see their own profile, salary history,
+and apply for leave."
+
+-----------------------------------------------------------
+Q: WHY DID YOU CHOOSE FASTAPI + SQLITE?
+-----------------------------------------------------------
+"FastAPI because it matches the Python role I applied for, gives
+automatic API documentation via Swagger, and has excellent async
+support. SQLite because the brief suggested it and it's genuinely
+sufficient for 10,000 employees — every analytics query runs in
+under 10ms. I documented in TRADEOFFS.md that Postgres would be
+the right call at 100k+ rows or under heavy concurrent writes,
+but SQLite removes unnecessary complexity for this scope."
+
+-----------------------------------------------------------
+Q: HOW DOES SALARY HISTORY WORK?
+-----------------------------------------------------------
+"Instead of storing a single 'current salary' column that gets
+overwritten, I have an append-only salary_history table with
+an effective_date on each row. Current salary is derived as the
+row with the maximum effective_date up to today — using a SQL
+window function. This means we never lose history, and HR can
+also see how someone's pay changed over their tenure. The
+derivation logic lives in exactly one place — current_salary.py
+— so every endpoint (list, detail, analytics, equity) uses the
+same definition and they can't drift apart."
+
+-----------------------------------------------------------
+Q: HOW DID YOU APPROACH PAY EQUITY DETECTION?
+-----------------------------------------------------------
+"I deliberately chose a simple, explainable method over a
+black-box model. The cohort is defined as (department + level +
+country) — country is in there because salaries are stored in
+local currency without conversion, so mixing USD and INR in the
+same cohort would give nonsensical results. An employee is
+flagged if their salary deviates from their cohort's median by
+more than a configurable threshold (default 20%). For gender gap,
+I flag cohorts where the average salary differs between genders
+by more than 10%. An HR manager can understand exactly why
+something is flagged — no black box."
+
+-----------------------------------------------------------
+Q: YOU MENTIONED A BUG YOU CAUGHT — TELL ME ABOUT THAT
+-----------------------------------------------------------
+"There were a few. The most interesting: the analytics page was
+showing 'Total Headcount: 519' instead of 10,000. I only caught
+it by actually looking at the rendered app — not from tests,
+because the tests used single-country fixtures and didn't exercise
+the cross-currency case. The root cause was that the summary
+endpoint was filtering headcount by the selected country too,
+even though headcount is currency-independent. The fix was to
+always compute headcount org-wide and only scope the salary
+avg/median to the country filter."
+
+"A second bug: I had been running tsc --noEmit to type-check the
+frontend, but the root tsconfig uses project references, so that
+command was silently checking zero files. The real errors — like
+MUI v9 removing the fontWeight prop from Typography — only showed
+up when I ran npm run build. I fixed CI to run tsc -b instead."
+
+-----------------------------------------------------------
+Q: HOW DID YOU USE AI TOOLS?
+-----------------------------------------------------------
+"I used AI throughout — for architecture planning, generating
+boilerplate, and implementation. But I verified every output
+against actually running the app. For example, AI helped design
+the seed script, but the bcrypt hashing for 10,000 employees at
+production cost would have taken hours — I caught that by actually
+timing it and fixed it by using lower rounds for seeded demo data.
+The AI usage log in docs/AI_USAGE.md documents exactly what was
+generated, what was corrected, and why — because the brief asked
+to see how I use AI, not just that I used it."
+
+-----------------------------------------------------------
+Q: WHY NO ALEMBIC / DATABASE MIGRATIONS?
+-----------------------------------------------------------
+"Deliberate scope cut. The schema was finalized before the seed
+script ran, there's one deploy target, and create_all() is simpler
+to explain and demo. A production system evolving over time needs
+proper migrations — I documented this in TRADEOFFS.md. If this
+were a real product I'd add Alembic on day two."
+
+-----------------------------------------------------------
+Q: WHAT WOULD YOU IMPROVE GIVEN MORE TIME?
+-----------------------------------------------------------
+"Three things:
+1. Switch to PostgreSQL and add Alembic migrations — the right
+   call for a real multi-writer system.
+2. Add frontend tests — I deliberately skipped most because all
+   business logic lives server-side and I wanted to focus test
+   effort where the complexity actually is. A follow-up pass would
+   add component tests for the forms and Playwright smoke flows.
+3. Currency conversion — right now salaries are in local currency
+   and cross-country comparisons are disabled for analytics. A real
+   global HR tool needs a FX rate source and a policy for how
+   historical salaries are reported when someone relocates."
+
+-----------------------------------------------------------
+Q: HOW DID YOU HANDLE AUTHENTICATION?
+-----------------------------------------------------------
+"JWT tokens. HR and Employee roles. The backend enforces RBAC at
+the route level — HR can access all endpoints; employees can only
+GET/PUT their own record. The employee's user account is linked
+to their employee record via a FK, so the JWT payload contains
+their employee_id and the backend just checks 'is this your own
+record?' for any ID-specific request. The frontend has route
+guards that redirect employees away from HR-only pages like
+analytics and payroll."
+
+-----------------------------------------------------------
+Q: WHY IS THE EMPLOYEE LIST SO FAST WITH 10,000 RECORDS?
+-----------------------------------------------------------
+"Server-side pagination — the frontend never fetches all 10,000
+rows. The MUI DataGrid is configured with paginationMode='server'
+and sortingMode='server', so every filter, sort, and page change
+sends a new query to the backend. The backend uses indexed columns
+(department_id, country_id, gender) and a reusable current-salary
+subquery for efficient sorting by salary. The employee table never
+loads more than the current page (25-100 rows) in the browser."
+
+-----------------------------------------------------------
+THINGS TO REMEMBER
+-----------------------------------------------------------
+- The requirements doc was written FIRST, before any code (commits show this)
+- Every decision has a documented reason in docs/TRADEOFFS.md
+- The seed script generates realistic data WITH synthetic outliers
+  so the analytics views have real signal to demonstrate
+- You can run the whole thing with: docker compose up -d + docker compose run --rm seed
+- GitHub: https://github.com/akshatakalashetti/salary-management
