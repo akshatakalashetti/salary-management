@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { analyticsApi } from '../api/analytics'
 
+export function useHeadcountByDepartment() {
+  return useQuery({ queryKey: ['analytics', 'headcount-by-dept'], queryFn: analyticsApi.headcountByDepartment })
+}
+
 export function useAnalyticsSummary(countryId?: number) {
   return useQuery({
     queryKey: ['analytics', 'summary', countryId],

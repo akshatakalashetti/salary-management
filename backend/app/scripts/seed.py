@@ -24,7 +24,13 @@ import random
 from faker import Faker
 from sqlalchemy import delete, insert
 
-from app.core.auth import hash_password
+import bcrypt as _bcrypt
+
+def _hash_seed(plain: str) -> str:
+    """Low-cost hash for seeded data (rounds=4). Only used here.
+    Real user-created passwords use the full 12-round cost in core/auth.py.
+    """
+    return _bcrypt.hashpw(plain.encode(), _bcrypt.gensalt(rounds=4)).decode()
 from app.db.base import Base, SessionLocal, engine
 from app.models import Country, Department, Employee, SalaryHistory, User
 from app.scripts.seed_data import (
@@ -52,12 +58,13 @@ PAY_FREQUENCIES = ["monthly", "biweekly"]
 
 
 def reset_schema(session) -> None:
-    session.execute(delete(User))
-    session.execute(delete(SalaryHistory))
-    session.execute(delete(Employee))
-    session.execute(delete(Department))
-    session.execute(delete(Country))
-    session.commit()
+    # Drop and recreate all tables so schema changes (new columns, new tables)
+    # are always applied, even if an old DB file exists on the volume.
+    # Use the global engine (not the session's bind) because after drop_all
+    # the session needs a fresh connection to see the recreated tables.
+    session.close()
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
 
 def seed_reference_data(session) -> tuple[dict[str, int], dict[str, dict]]:
@@ -191,9 +198,11 @@ def run(count: int) -> None:
     Faker.seed(SEED)
     rng = random.Random(SEED)
 
+    # reset_schema drops/recreates all tables; we need a fresh session after.
+    session = SessionLocal()
+    reset_schema(session)
     session = SessionLocal()
     try:
-        reset_schema(session)
         dept_ids, countries = seed_reference_data(session)
 
         employees, salary_rows = generate_employees(count, dept_ids, countries, faker, rng)
@@ -208,42 +217,52 @@ def run(count: int) -> None:
         session.execute(insert(SalaryHistory), salary_rows)
         session.commit()
 
-        # --- Users ---
-        # One HR admin account
-        session.add(
-            User(
-                email="hr@acme-corp.example",
-                password_hash=hash_password("hr-password"),
-                role="hr",
-                employee_id=None,
-            )
-        )
-        session.commit()
-
-        # One employee login per employee (email = their work email, password = their employee_code)
-        all_employees = session.query(Employee.id, Employee.email, Employee.employee_code).all()
-        user_rows = [
-            {
-                "email": emp.email,
-                "password_hash": hash_password(emp.employee_code),
-                "role": "employee",
-                "employee_id": emp.id,
-            }
-            for emp in all_employees
-        ]
-        # Batch in chunks to avoid SQLite variable limit
-        chunk = 500
-        for start in range(0, len(user_rows), chunk):
-            session.execute(insert(User), user_rows[start : start + chunk])
-        session.commit()
-
-        print(f"Seeded {len(employees)} employees and {len(salary_rows)} salary_history rows.")
-        print(f"Seeded {len(user_rows) + 1} user accounts (1 HR + {len(user_rows)} employees).")
-        print("  HR login:       hr@acme-corp.example / hr-password")
-        print("  Employee login: <their work email> / <their EMP-XXXXXX code>")
+        print(f"Seeded {len(employees)} employees and {len(salary_rows)} salary_history rows.", flush=True)
         for dept_name, _, _ in DEPARTMENTS:
             n = sum(1 for e in employees if e["department_id"] == dept_ids[dept_name])
-            print(f"  {dept_name:20s}: {n}")
+            print(f"  {dept_name:20s}: {n}", flush=True)
+
+        # --- Users ---
+        print("Creating user accounts...", flush=True)
+        try:
+            # One HR admin account
+            session.add(
+                User(
+                    email="hr@acme-corp.example",
+                    password_hash=_hash_seed("hr-password"),
+                    role="hr",
+                    employee_id=None,
+                )
+            )
+            session.commit()
+
+            # One employee login per employee (email = work email, password = employee_code).
+            # Pre-compute a single shared hash per employee at low bcrypt cost (rounds=4)
+            # so the seed completes in seconds rather than hours.
+            all_employees = session.query(Employee.id, Employee.email, Employee.employee_code).all()
+            user_rows = [
+                {
+                    "email": emp.email,
+                    "password_hash": _hash_seed(emp.employee_code),
+                    "role": "employee",
+                    "employee_id": emp.id,
+                }
+                for emp in all_employees
+            ]
+            # Batch in chunks to stay within SQLite's variable limit
+            chunk = 500
+            for start in range(0, len(user_rows), chunk):
+                session.execute(insert(User), user_rows[start : start + chunk])
+            session.commit()
+
+            print(f"Seeded {len(user_rows) + 1} user accounts (1 HR + {len(user_rows)} employees).", flush=True)
+            print("  HR login:       hr@acme-corp.example / hr-password", flush=True)
+            print("  Employee login: <their work email> / <their EMP-XXXXXX code>", flush=True)
+        except Exception as exc:
+            print(f"WARNING: user creation failed — {exc}", flush=True)
+            import traceback
+
+            traceback.print_exc()
     finally:
         session.close()
 

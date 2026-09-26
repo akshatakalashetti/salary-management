@@ -39,6 +39,21 @@ export interface EmployeeListItem {
 
 export interface EmployeeDetail extends EmployeeListItem {
   salary_history: SalaryHistoryEntry[]
+  // Personal
+  phone: string | null
+  date_of_birth: string | null
+  // Address
+  address_street: string | null
+  address_city: string | null
+  address_state: string | null
+  address_postal_code: string | null
+  // Payroll
+  pay_frequency: string | null
+  bank_last4: string | null
+  tax_id: string | null
+  // Emergency contact
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
 }
 
 export interface EmployeeListResponse {
@@ -118,4 +133,31 @@ export interface EmployeeListParams {
   sort_dir?: 'asc' | 'desc'
   page?: number
   page_size?: number
+}
+
+export interface LeaveBalance {
+  leave_type: string
+  total_days: number
+  used_days: number
+  pending_days: number
+  available_days: number
+}
+
+export interface LeaveRequest {
+  id: number
+  employee_id: number
+  leave_type: string
+  start_date: string
+  end_date: string
+  days: number
+  reason: string | null
+  status: string
+  created_at: string
+}
+
+export interface LeaveRequestCreate {
+  leave_type: string
+  start_date: string
+  end_date: string
+  reason?: string
 }

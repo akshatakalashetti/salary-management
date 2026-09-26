@@ -1,9 +1,15 @@
 import { api, buildQuery } from './client'
 import type { AnalyticsSummary, CohortStats, GenderGapRow, OutlierRow } from './types'
 
+export interface DeptHeadcount {
+  department: string
+  count: number
+}
+
 export const analyticsApi = {
   summary: (countryId?: number) =>
     api.get<AnalyticsSummary>(`/analytics/summary${buildQuery({ country_id: countryId })}`),
+  headcountByDepartment: () => api.get<DeptHeadcount[]>('/analytics/headcount-by-department'),
   // country_id is required by the backend for these two: avg/median would
   // otherwise blend incompatible currencies across countries.
   byDepartment: (countryId: number) =>

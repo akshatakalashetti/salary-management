@@ -1,9 +1,9 @@
-import { Alert, Box, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Card, CardContent, Chip, LinearProgress, MenuItem, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import { useState } from 'react'
 import { AnalyticsBarChart } from '../components/AnalyticsBarChart'
 import { AnalyticsCard } from '../components/AnalyticsCard'
 import { CohortStatsTable } from '../components/CohortStatsTable'
-import { useAnalyticsSummary, useByCountry, useByDepartment, useSalaryBands } from '../hooks/useAnalytics'
+import { useAnalyticsSummary, useByCountry, useByDepartment, useHeadcountByDepartment, useSalaryBands } from '../hooks/useAnalytics'
 import { useCountries } from '../hooks/useReference'
 
 export function AnalyticsPage() {
@@ -17,7 +17,9 @@ export function AnalyticsPage() {
   const { data: byCountry } = useByCountry()
   const { data: byDepartment } = useByDepartment(countryId)
   const { data: salaryBands } = useSalaryBands(countryId)
+  const { data: headcountByDept } = useHeadcountByDepartment()
   const selectedCountry = countries?.find((c) => c.id === countryId)
+  const totalHeadcount = headcountByDept?.reduce((s, d) => s + d.count, 0) ?? 1
 
   return (
     <Box>
@@ -26,16 +28,50 @@ export function AnalyticsPage() {
       </Typography>
 
       <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-        <AnalyticsCard label="Total Headcount (org-wide)" value={summary ? String(summary.headcount) : '—'} />
+        <AnalyticsCard label="Total Headcount" value={summary ? summary.headcount.toLocaleString() : '—'} icon="👥" accent="#4F46E5" />
         <AnalyticsCard
-          label={`Median Salary${selectedCountry ? ` (${selectedCountry.currency_code})` : ''}`}
+          label={`Median Salary${selectedCountry ? ` (${selectedCountry.currency_code})` : ' — select a country'}`}
           value={summary?.median_salary != null ? summary.median_salary.toLocaleString() : '—'}
+          icon="📊"
+          accent="#10B981"
         />
         <AnalyticsCard
-          label={`Average Salary${selectedCountry ? ` (${selectedCountry.currency_code})` : ''}`}
+          label={`Average Salary${selectedCountry ? ` (${selectedCountry.currency_code})` : ' — select a country'}`}
           value={summary?.avg_salary != null ? summary.avg_salary.toLocaleString() : '—'}
+          icon="💰"
+          accent="#F59E0B"
         />
       </Stack>
+
+      {/* Headcount by department — currency-independent, always valid */}
+      {headcountByDept && headcountByDept.length > 0 && (
+        <Card variant="outlined" sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+              Headcount by Department ({totalHeadcount} active employees)
+            </Typography>
+            <Stack spacing={1}>
+              {headcountByDept.map((dept) => {
+                const pct = Math.round((dept.count / totalHeadcount) * 100)
+                return (
+                  <Box key={dept.department}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+                      <Typography variant="body2">{dept.department}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="caption" color="text.secondary">{pct}%</Typography>
+                        <Chip size="small" label={dept.count} variant="outlined" />
+                      </Box>
+                    </Box>
+                    <Tooltip title={`${dept.count} employees (${pct}%)`}>
+                      <LinearProgress variant="determinate" value={pct} sx={{ height: 8, borderRadius: 4 }} />
+                    </Tooltip>
+                  </Box>
+                )
+              })}
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
 
       <Alert severity="info" sx={{ mb: 3 }}>
         Salaries are stored in local currency and are not converted to a common currency, so

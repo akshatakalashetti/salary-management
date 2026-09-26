@@ -1,12 +1,21 @@
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.analytics.aggregation import group_by, org_summary
 from app.core.auth import require_hr
 from app.crud.analytics import fetch_current_salary_points
 from app.db.base import get_db
+from app.models.employee import Employee
+from app.models.reference import Department
 from app.models.user import User
 from app.schemas.analytics import CohortStatsOut, SummaryOut
+
+
+class DeptHeadcount(BaseModel):
+    department: str
+    count: int
 
 router = APIRouter(prefix="/analytics", tags=["analytics"], dependencies=[Depends(require_hr)])
 
@@ -35,6 +44,19 @@ def summary(country_id: int | None = None, db: Session = Depends(get_db)):
     if stats is None:
         return SummaryOut(headcount=org_wide_headcount, avg_salary=None, median_salary=None)
     return SummaryOut(headcount=org_wide_headcount, avg_salary=stats.avg, median_salary=stats.median)
+
+
+@router.get("/headcount-by-department", response_model=list[DeptHeadcount])
+def headcount_by_department(db: Session = Depends(get_db)):
+    """Org-wide headcount per department -- currency-independent, no filters needed."""
+    rows = db.execute(
+        select(Department.name, func.count(Employee.id))
+        .join(Employee, Employee.department_id == Department.id)
+        .where(Employee.status == "active")
+        .group_by(Department.name)
+        .order_by(func.count(Employee.id).desc())
+    ).all()
+    return [DeptHeadcount(department=row[0], count=row[1]) for row in rows]
 
 
 @router.get("/by-department", response_model=list[CohortStatsOut])

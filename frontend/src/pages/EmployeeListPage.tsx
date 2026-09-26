@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material'
+import { Alert, Box, Button, Stack, Typography } from '@mui/material'
 import { DataGrid, type GridColDef, type GridSortModel } from '@mui/x-data-grid'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -103,9 +103,6 @@ export function EmployeeListPage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" sx={{ fontWeight: 600 }}>
           Employees
-          {data ? (
-            <Chip label={`${data.total.toLocaleString()} total`} size="small" sx={{ ml: 1.5 }} />
-          ) : null}
         </Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={handleExport}>
