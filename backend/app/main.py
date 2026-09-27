@@ -37,7 +37,7 @@ def _auto_seed_if_empty() -> None:
             run(10_000)
         elif user_count == 0:
             log.info("Employees exist but no users — creating user accounts…")
-            from app.scripts.seed import _hash_seed, DEFAULT_BALANCES
+            from app.scripts.seed import _hash_seed
             from app.db.base import SessionLocal
             from app.models.user import User
             from app.models.employee import Employee
