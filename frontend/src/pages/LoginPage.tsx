@@ -196,7 +196,7 @@ export function LoginPage() {
               <Typography variant="caption" color="text.secondary">hr@acme-corp.example · hr-password</Typography>
             </Box>
             <Box
-              onClick={() => { setEmail('gabriella.abbott.1073@acme-corp.example'); setPassword('EMP-001073') }}
+              onClick={() => { setEmail('gabriella.abbott.1073@acme-corp.example'); setPassword('Employee@123') }}
               sx={{
                 p: 1.5,
                 borderRadius: 2,
@@ -209,7 +209,7 @@ export function LoginPage() {
               }}
             >
               <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary', display: 'block' }}>Employee</Typography>
-              <Typography variant="caption" color="text.secondary">gabriella.abbott.1073@acme-corp.example · EMP-001073</Typography>
+              <Typography variant="caption" color="text.secondary">gabriella.abbott.1073@acme-corp.example · Employee@123</Typography>
             </Box>
           </Box>
         </Box>

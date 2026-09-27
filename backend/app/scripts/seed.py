@@ -236,14 +236,15 @@ def run(count: int) -> None:
             )
             session.commit()
 
-            # One employee login per employee (email = work email, password = employee_code).
-            # Pre-compute a single shared hash per employee at low bcrypt cost (rounds=4)
-            # so the seed completes in seconds rather than hours.
+            # All employees share the same password: "Employee@123"
+            # We pre-compute ONE hash and reuse it for all 10k rows — computing
+            # 10k individual bcrypt hashes would take minutes on a slow server.
+            shared_hash = _hash_seed("Employee@123")
             all_employees = session.query(Employee.id, Employee.email, Employee.employee_code).all()
             user_rows = [
                 {
                     "email": emp.email,
-                    "password_hash": _hash_seed(emp.employee_code),
+                    "password_hash": shared_hash,
                     "role": "employee",
                     "employee_id": emp.id,
                 }
