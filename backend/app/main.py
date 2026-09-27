@@ -35,7 +35,7 @@ def _auto_seed_if_empty() -> None:
             log.info("Empty database — running full seed…")
             from app.scripts.seed import run
             run(10_000)
-        elif user_count == 0:
+        elif user_count <= 1:
             log.info("Employees exist but no users — creating user accounts…")
             from app.scripts.seed import _hash_seed
             from app.db.base import SessionLocal
