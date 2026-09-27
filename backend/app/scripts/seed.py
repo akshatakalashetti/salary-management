@@ -225,44 +225,47 @@ def run(count: int) -> None:
         # --- Users ---
         print("Creating user accounts...", flush=True)
         try:
-            # One HR admin account
-            session.add(
-                User(
-                    email="hr@acme-corp.example",
-                    password_hash=_hash_seed("hr-password"),
-                    role="hr",
-                    employee_id=None,
-                )
-            )
+            shared_hash = _hash_seed("Employee@123")
+
+            # --- HR admin ---
+            session.add(User(
+                email="hr@acme-corp.example",
+                password_hash=_hash_seed("hr-password"),
+                role="hr",
+                employee_id=None,
+            ))
             session.commit()
 
-            # All employees share the same password: "Employee@123"
-            # We pre-compute ONE hash and reuse it for all 10k rows — computing
-            # 10k individual bcrypt hashes would take minutes on a slow server.
-            shared_hash = _hash_seed("Employee@123")
-            all_employees = session.query(Employee.id, Employee.email, Employee.employee_code).all()
+            # --- Dedicated demo employee (fixed email, always stable) ---
+            # First employee in the DB is used as the demo account so the
+            # login-page credential never changes between seed runs.
+            demo_emp = session.query(Employee).order_by(Employee.id).first()
+            session.add(User(
+                email="employee@acme-corp.example",
+                password_hash=shared_hash,
+                role="employee",
+                employee_id=demo_emp.id,
+            ))
+            session.commit()
+
+            # --- All other employees (their own work email) ---
+            all_employees = session.query(Employee.id, Employee.email).all()
             user_rows = [
-                {
-                    "email": emp.email,
-                    "password_hash": shared_hash,
-                    "role": "employee",
-                    "employee_id": emp.id,
-                }
+                {"email": emp.email, "password_hash": shared_hash, "role": "employee", "employee_id": emp.id}
                 for emp in all_employees
             ]
-            # Batch in chunks to stay within SQLite's variable limit
             chunk = 500
             for start in range(0, len(user_rows), chunk):
                 session.execute(insert(User), user_rows[start : start + chunk])
             session.commit()
 
-            print(f"Seeded {len(user_rows) + 1} user accounts (1 HR + {len(user_rows)} employees).", flush=True)
-            print("  HR login:       hr@acme-corp.example / hr-password", flush=True)
-            print("  Employee login: <their work email> / <their EMP-XXXXXX code>", flush=True)
+            print(f"Seeded {len(user_rows) + 2} user accounts.", flush=True)
+            print("  HR login:           hr@acme-corp.example / hr-password", flush=True)
+            print("  Demo employee:      employee@acme-corp.example / Employee@123", flush=True)
+            print("  Any employee:       <their work email> / Employee@123", flush=True)
         except Exception as exc:
             print(f"WARNING: user creation failed — {exc}", flush=True)
             import traceback
-
             traceback.print_exc()
     finally:
         session.close()
