@@ -26,3 +26,6 @@ data/
 # Editors
 .vscode/
 .idea/
+
+# Local interview prep — personal notes, not for the repo
+docs-local/
